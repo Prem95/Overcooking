@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Overcooked Game - Simplified Version</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.162.0/build/three.module.js';
+
+        // Game constants
+        const STATION_SIZE = 1;
+        const COUNTER_SIZE = 0.8;
+
+        // Define station and counter colors
+        const COLORS = {
+            pantry: 0x8BC34A,        // green
+            chopping: 0xFF5252,      // red
+            cooking: 0xFF9800,       // orange
+            plateDispenser: 0x9E9E9E, // grey
+            serving: 0x2196F3,       // blue
+            counter: 0xBDBDBD        // light grey
+        };
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+
+        // Orthographic camera for 2D top-down view
+        const aspectRatio = window.innerWidth / window.innerHeight;
+        const viewSize = 10; // The height of the viewable area in units
+        const camera = new THREE.OrthographicCamera(
+            -viewSize * aspectRatio / 2, // left
+            viewSize * aspectRatio / 2,  // right
+            viewSize / 2,                // top
+            -viewSize / 2,               // bottom
+            1,                           // near
+            1000                         // far
+        );
+        camera.position.z = 10;
+
+        // Renderer setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Kitchen layout - stores references to all stations and counters
+        const kitchen = {
+            stations: {},
+            counters: []
+        };
+
+        // Function to create a station or counter
+        function createKitchenElement(type, position, size, color) {
+            const geometry = new THREE.PlaneGeometry(size, size);
+            const material = new THREE.MeshBasicMaterial({ color });
+            const element = new THREE.Mesh(geometry, material);
+            element.position.set(position.x, position.y, 0);
+            
+            // Add a text label
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 128;
+            context.fillStyle = 'white';
+            context.font = '24px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(type, canvas.width/2, canvas.height/2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const labelGeometry = new THREE.PlaneGeometry(size * 0.8, size * 0.3);
+            const labelMaterial = new THREE.MeshBasicMaterial({ 
+                map: texture,
+                transparent: true
+            });
+            
+            const label = new THREE.Mesh(labelGeometry, labelMaterial);
+            label.position.set(0, -size * 0.2, 0.1); // Position label below element
+            element.add(label);
+            
+            scene.add(element);
+            return element;
+        }
+
+        // Define and create stations
+        function createKitchenLayout() {
+            console.log("Creating kitchen layout...");
+            // Create stations
+            kitchen.stations.pantry = createKitchenElement('Pantry', { x: -4, y: 3 }, STATION_SIZE, COLORS.pantry);
+            kitchen.stations.chopping = createKitchenElement('Chopping', { x: -4, y: 0 }, STATION_SIZE, COLORS.chopping);
+            kitchen.stations.cooking = createKitchenElement('Cooking', { x: -4, y: -3 }, STATION_SIZE, COLORS.cooking);
+            kitchen.stations.plateDispenser = createKitchenElement('Plates', { x: 4, y: 3 }, STATION_SIZE, COLORS.plateDispenser);
+            kitchen.stations.serving = createKitchenElement('Serving', { x: 4, y: -3 }, STATION_SIZE, COLORS.serving);
+            
+            // Create counters (at least 3)
+            kitchen.counters.push(
+                createKitchenElement('Counter', { x: 0, y: 3 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 0, y: 0 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 0, y: -3 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 4, y: 0 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: -2, y: -1.5 }, COUNTER_SIZE, COLORS.counter)
+            );
+        }
+
+        // Create a test cube to ensure rendering is working
+        function createTestCube() {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(0, 0, 0.5);
+            scene.add(cube);
+            return cube;
+        }
+
+        // Create kitchen layout
+        createKitchenLayout();
+        
+        // Create a test cube
+        const testCube = createTestCube();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            
+            camera.left = -viewSize * aspectRatio / 2;
+            camera.right = viewSize * aspectRatio / 2;
+            camera.top = viewSize / 2;
+            camera.bottom = -viewSize / 2;
+            camera.updateProjectionMatrix();
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Animate test cube to make it obvious if rendering is working
+            testCube.rotation.x += 0.01;
+            testCube.rotation.y += 0.01;
+            
+            renderer.render(scene, camera);
+        }
+
+        animate();
+        
+        console.log("Game initialized successfully");
+    </script>
+</body>
+</html> 
