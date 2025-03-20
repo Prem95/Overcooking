@@ -6,7 +6,9 @@ const gameState = {
     playerHolding: null,
     errorMessage: null,
     errorMessageTimeout: null,
-    items: []  // To track all items in the scene
+    items: [],  // To track all items in the scene
+    processingInProgress: false, // Flag to track if chopping/cooking is in progress
+    progressBar: null // Reference to the current progress bar
 };
 
 // Indicate when game is loaded

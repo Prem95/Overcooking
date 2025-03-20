@@ -26,38 +26,69 @@ function init() {
         
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0);
+        scene.background = new THREE.Color(0x87CEEB); // Light blue sky background
 
-        // Orthographic camera for 2D top-down view
+        // Orthographic camera for 2D top-down view with slight perspective
         const aspectRatio = window.innerWidth / window.innerHeight;
-        const viewSize = 10; // The height of the viewable area in units
+        const viewSize = 14; // Increased viewable area to accommodate larger kitchen
         const camera = new THREE.OrthographicCamera(
             -viewSize * aspectRatio / 2, // left
             viewSize * aspectRatio / 2,  // right
             viewSize / 2,                // top
             -viewSize / 2,               // bottom
-            1,                           // near
+            0.1,                         // near
             1000                         // far
         );
-        camera.position.z = 10;
+        
+        // Position camera for a slightly isometric perspective
+        camera.position.set(0, 8, 10);
+        camera.lookAt(0, 0, 0);
+        camera.rotation.z = 0; // Keep kitchen aligned with screen
 
-        // Renderer setup targeting the canvas
+        // Renderer setup targeting the canvas with improved settings
         const renderer = new THREE.WebGLRenderer({
             canvas: canvas,
-            antialias: true
+            antialias: true,
+            alpha: true
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         
-        // Add lighting for 3D models
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Enable shadow rendering
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Add enhanced lighting for 3D models
+        // Warm ambient light
+        const ambientLight = new THREE.AmbientLight(0xfff5e1, 0.6);
         scene.add(ambientLight);
         
+        // Main directional light with shadows
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(5, 10, 7.5);
+        directionalLight.castShadow = true;
+        
+        // Improve shadow quality
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.bias = -0.001;
+        
+        const d = 15;
+        directionalLight.shadow.camera.left = -d;
+        directionalLight.shadow.camera.right = d;
+        directionalLight.shadow.camera.top = d;
+        directionalLight.shadow.camera.bottom = -d;
+        
         scene.add(directionalLight);
+        
+        // Add a subtle secondary light
+        const secondaryLight = new THREE.DirectionalLight(0xAED6F1, 0.3);
+        secondaryLight.position.set(-5, 5, -5);
+        scene.add(secondaryLight);
 
-        console.log("Initializing kitchen layout...");
+        console.log("Initializing enhanced 3D kitchen layout...");
         // Initialize game components
         createKitchenLayout(scene);
         

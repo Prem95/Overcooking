@@ -50,6 +50,61 @@ export function createErrorMessage(scene, message) {
     }, 2000);
 }
 
+// Create progress bar for chopping/cooking
+export function createProgressBar(scene, x, y) {
+    // Create a shader material for the progress bar
+    const progressMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            progress: { value: 0.0 },
+            barColor: { value: new THREE.Color(0x00ff00) }, // Green color
+            backgroundColor: { value: new THREE.Color(0x333333) } // Dark gray
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float progress;
+            uniform vec3 barColor;
+            uniform vec3 backgroundColor;
+            varying vec2 vUv;
+            void main() {
+                // Background of progress bar
+                vec3 color = backgroundColor;
+                
+                // Fill bar based on progress
+                if (vUv.x < progress) {
+                    color = barColor;
+                }
+                
+                // Add outline
+                if (vUv.x < 0.02 || vUv.x > 0.98 || vUv.y < 0.1 || vUv.y > 0.9) {
+                    color = vec3(0.0, 0.0, 0.0);
+                }
+                
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `
+    });
+    
+    // Create the progress bar mesh
+    const barGeometry = new THREE.PlaneGeometry(1.5, 0.3);
+    const progressBar = new THREE.Mesh(barGeometry, progressMaterial);
+    
+    // Position above the player
+    progressBar.position.set(x, y + 1.2, 0.2);
+    
+    // Add to scene
+    scene.add(progressBar);
+    
+    // Store reference and return
+    gameState.progressBar = progressBar;
+    return progressBar;
+}
+
 // Check if device is mobile
 export function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
