@@ -38,13 +38,21 @@ OvercookedGame/
   - Implements collision detection to prevent movement through objects
   - Provides feedback through error messages
   - Sets up mobile controls that adapt to the device type
+- Implements the item system:
+  - Defines item types (onion, tomato, meat) and states (raw, chopped, cooked)
+  - Creates visual representations for items
+  - Manages item states (held by player, on counter, etc.)
+  - Handles interactions with the pantry to create new items
+  - Enables placing items on counters and picking them up
+  - Maintains the relationship between items and counters
 - Uses a central game state object to track:
   - Player position and held items
   - Input states (keyboard/touch)
   - UI elements like error messages
+  - All items in the scene and their states
 - Will eventually contain additional game logic:
-  - Item system and interactions
-  - Game state management
+  - Station-specific processing (chopping, cooking)
+  - Recipe assembly and validation
   - Orders and scoring
 
 ### package.json
@@ -62,8 +70,11 @@ OvercookedGame/
 - **Centralized Kitchen Layout**: Storing all kitchen elements in a central `kitchen` object for easy access and management
 - **Centralized Game State**: Using a single state object to maintain game state, making it easier to track and update
 - **AABB Collision Detection**: Using Axis-Aligned Bounding Box collision detection for simple and efficient collision handling
-- **Visual Differentiation**: Using different colors for each type of station and counter for easy identification
+- **Visual Differentiation**: Using different colors for each type of station, counter, and item for easy identification
 - **Text Labels**: Adding text labels to kitchen elements to improve usability and clarity
+- **Proximity-Based Interactions**: Using a radius-based proximity system to detect when the player can interact with stations or counters
+- **Z-Index Management**: Carefully managing z-index values to ensure proper rendering order (counters below items below player below UI)
 - **Responsive Design**: Implementing window resize handling to ensure the game works well on different screen sizes
 - **Cross-Platform Controls**: Supporting both keyboard and touch controls to work across desktop and mobile devices
 - **User Feedback**: Implementing an error message system to provide feedback on player actions
+- **State Tracking**: Maintaining comprehensive state for all game elements to enable complex interactions

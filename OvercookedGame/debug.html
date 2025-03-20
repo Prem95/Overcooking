@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overcooked Game Debug</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        #debugOutput {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            width: 600px;
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="gameContainer"></div>
+    <div id="debugOutput"></div>
+    
+    <script>
+        // Debug logger
+        function log(message) {
+            const output = document.getElementById('debugOutput');
+            const line = document.createElement('div');
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+
+        window.onerror = function(message, source, lineno, colno, error) {
+            log(`ERROR: ${message} at ${source}:${lineno}:${colno}`);
+            return false;
+        };
+
+        log('Debug page loaded');
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        
+        log('THREE.js imported successfully: ' + (THREE ? 'YES' : 'NO'));
+        
+        // Centralized game state
+        const gameState = {
+            keysPressed: {},
+            player: null,
+            playerPosition: { x: 0, y: 0 },
+            playerHolding: null,
+            errorMessage: null,
+            errorMessageTimeout: null,
+            items: []  // To track all items in the scene
+        };
+
+        // Game constants
+        const STATION_SIZE = 1;
+        const COUNTER_SIZE = 0.8;
+        const PLAYER_SIZE = 0.6;
+        const PLAYER_SPEED = 0.1;
+        const INTERACTION_RADIUS = 0.8;
+        const ITEM_SIZE = 0.4;
+
+        // Color definitions
+        const COLORS = {
+            pantry: 0x8BC34A,        // green
+            chopping: 0xFF5252,      // red
+            cooking: 0xFF9800,       // orange
+            plateDispenser: 0x9E9E9E, // grey
+            serving: 0x2196F3,       // blue
+            counter: 0xBDBDBD,       // light grey
+            player: 0xFFFFFF,        // white
+            onion: 0xFFEB3B,         // yellow
+            tomato: 0xFF5252,        // red
+            meat: 0x795548           // brown
+        };
+
+        // Kitchen layout object
+        const kitchen = {
+            stations: {},
+            counters: []
+        };
+
+        try {
+            log("Initializing game...");
+            
+            // Create a canvas element for the game
+            const container = document.getElementById('gameContainer');
+            if (!container) {
+                log("Game container not found!");
+                throw new Error("Game container not found!");
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = 'gameCanvas';
+            container.appendChild(canvas);
+            
+            // Scene setup
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+            log("Scene created");
+
+            // Orthographic camera for 2D top-down view
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const viewSize = 10; // The height of the viewable area in units
+            const camera = new THREE.OrthographicCamera(
+                -viewSize * aspectRatio / 2, // left
+                viewSize * aspectRatio / 2,  // right
+                viewSize / 2,                // top
+                -viewSize / 2,               // bottom
+                1,                           // near
+                1000                         // far
+            );
+            camera.position.z = 10;
+            log("Camera created");
+
+            // Renderer setup targeting the canvas
+            const renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            log("Renderer created");
+
+            // Function to create a station or counter
+            function createKitchenElement(type, position, size, color) {
+                const geometry = new THREE.PlaneGeometry(size, size);
+                const material = new THREE.MeshBasicMaterial({ color });
+                const element = new THREE.Mesh(geometry, material);
+                element.position.set(position.x, position.y, 0);
+                
+                // Add a text label
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 128;
+                canvas.height = 128;
+                context.fillStyle = 'white';
+                context.font = '24px Arial';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText(type, canvas.width/2, canvas.height/2);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const labelGeometry = new THREE.PlaneGeometry(size * 0.8, size * 0.3);
+                const labelMaterial = new THREE.MeshBasicMaterial({ 
+                    map: texture,
+                    transparent: true
+                });
+                
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.set(0, -size * 0.2, 0.1); // Position label below element
+                element.add(label);
+                
+                scene.add(element);
+                return element;
+            }
+
+            // Create kitchen layout
+            log("Creating kitchen layout...");
+            // Create stations
+            kitchen.stations.pantry = createKitchenElement('Pantry', { x: -4, y: 3 }, STATION_SIZE, COLORS.pantry);
+            kitchen.stations.chopping = createKitchenElement('Chopping', { x: -4, y: 0 }, STATION_SIZE, COLORS.chopping);
+            kitchen.stations.cooking = createKitchenElement('Cooking', { x: -4, y: -3 }, STATION_SIZE, COLORS.cooking);
+            kitchen.stations.plateDispenser = createKitchenElement('Plates', { x: 4, y: 3 }, STATION_SIZE, COLORS.plateDispenser);
+            kitchen.stations.serving = createKitchenElement('Serving', { x: 4, y: -3 }, STATION_SIZE, COLORS.serving);
+            
+            // Create counters
+            kitchen.counters.push(
+                createKitchenElement('Counter', { x: 0, y: 3 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 0, y: 0 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 0, y: -3 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: 4, y: 0 }, COUNTER_SIZE, COLORS.counter),
+                createKitchenElement('Counter', { x: -2, y: -1.5 }, COUNTER_SIZE, COLORS.counter)
+            );
+            
+            // Store positions and states for game logic
+            kitchen.counters.forEach(counter => {
+                counter.userData = {
+                    isOccupied: false,
+                    position: { x: counter.position.x, y: counter.position.y },
+                    item: null
+                };
+            });
+            
+            // Store station positions for game logic
+            Object.entries(kitchen.stations).forEach(([key, station]) => {
+                station.userData = {
+                    type: key,
+                    position: { x: station.position.x, y: station.position.y }
+                };
+            });
+            log("Kitchen layout created");
+
+            // Create player character
+            log("Creating player...");
+            // Create a circular player representation
+            const geometry = new THREE.CircleGeometry(PLAYER_SIZE / 2, 32);
+            const material = new THREE.MeshBasicMaterial({ color: COLORS.player });
+            const player = new THREE.Mesh(geometry, material);
+            
+            // Start player in the center of the kitchen
+            gameState.playerPosition = { x: 0, y: 1.5 };
+            player.position.set(gameState.playerPosition.x, gameState.playerPosition.y, 0.1);
+            
+            scene.add(player);
+            gameState.player = player;
+            log("Player created");
+
+            // Animation loop
+            log("Starting animation loop...");
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+
+            animate();
+            
+            // Log to console for debugging
+            log("Game initialized successfully");
+            
+            // Set flag to indicate game has loaded
+            window.gameLoaded = true;
+        } catch (error) {
+            log("ERROR during game initialization: " + error.message);
+            console.error("Error during game initialization:", error);
+        }
+
+        function log(message) {
+            const output = document.getElementById('debugOutput');
+            const line = document.createElement('div');
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+    </script>
+</body>
+</html> 

@@ -1,23 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Overcooked-Inspired Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overcooked Game</title>
     <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        #loadingFallback {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+        }
+        #mobile-controls {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            #mobile-controls {
+                display: flex;
+            }
+        }
     </style>
-</head>
-<body>
-    <canvas id="gameCanvas"></canvas>
-    
-    <!-- Import Three.js from CDN -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+                "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js"
             }
         }
     </script>
+</head>
+<body>
+    <div id="gameContainer"></div>
+    
+    <div id="loadingFallback">
+        <h2>Game not loading?</h2>
+        <p>If you don't see the game within a few seconds, try:</p>
+        <ul style="text-align: left;">
+            <li>Using a modern browser (Chrome, Firefox, Edge)</li>
+            <li>Enabling JavaScript in your browser</li>
+            <li>Running the game on a local server</li>
+            <li>Check the browser console (F12) for errors</li>
+        </ul>
+    </div>
+    
+    <script>
+        // Show fallback message if game doesn't load within 3 seconds
+        setTimeout(() => {
+            if (!window.gameLoaded) {
+                document.getElementById('loadingFallback').style.display = 'block';
+                console.log('Game not loaded after 3 seconds. Check console for errors.');
+            }
+        }, 3000);
+
+        // Debug output
+        console.log('Page loaded. Waiting for game to initialize...');
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript error:', event.message, 'at', event.filename, 'line', event.lineno);
+        });
+    </script>
+    
     <script type="module" src="main.js"></script>
 </body>
 </html> 

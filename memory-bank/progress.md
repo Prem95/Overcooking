@@ -71,5 +71,39 @@
 - On mobile devices, the control overlay appears and allows movement via touch
 - Error messages can be displayed when needed (currently commented out for collisions)
 
+## Step 4: Implementing the Item System [Completed]
+
+- Defined item constants and types:
+  - Added item size constant
+  - Created color definitions for different ingredients (onion, tomato, meat)
+  - Defined item types (onion, tomato, meat)
+  - Added item states (raw, chopped, cooked) for future processing steps
+- Implemented proximity detection:
+  - Created a checkProximity function to detect when player is near stations or counters
+  - Set an interaction radius that determines how close the player needs to be to interact
+- Created item management functions:
+  - createItem: Creates new items with proper visual representation and metadata
+  - attachItemToPlayer: Attaches an item to the player (positioned above their head)
+  - placeItemOnCounter: Places an item on a counter and updates all relevant states
+  - pickUpItemFromCounter: Picks up an item from a counter and attaches it to player
+- Implemented specific interaction handlers:
+  - handlePantryInteraction: Creates a new onion and gives it to the player
+  - handleCounterInteraction: Handles placing items on and picking them up from counters
+  - handleInteraction: Main interaction function that determines what to do based on proximity
+- Updated player movement to include held item movement
+- Added appropriate error messages for invalid actions:
+  - "Hands full!" when trying to pick up a new item while holding one
+  - "Counter occupied!" when trying to place an item on an already occupied counter
+  - "Nothing to pick up!" when trying to pick up from an empty counter
+  - "Nothing nearby!" when trying to interact while not near any station or counter
+
+### Testing Notes
+- Player can get an onion from the pantry by standing nearby and pressing space
+- The onion appears above the player's head and moves with the player
+- Player can place the onion on an empty counter by standing nearby and pressing space
+- Player can pick up an onion from a counter when nearby and pressing space
+- Appropriate error messages are shown for invalid actions
+- Interaction works on both desktop (space key) and mobile (space button)
+
 ### Next Steps
-- Proceed to Step 4: Implementing the Item System
+- Proceed to Step 5: Station Interactions
