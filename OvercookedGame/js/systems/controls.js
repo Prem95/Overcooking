@@ -2,6 +2,56 @@ import gameState from '../state.js';
 import { isMobileDevice } from '../utils/ui.js';
 import { handleInteraction } from './interaction.js';
 
+// Create settings UI
+function createSettingsUI() {
+    // Create settings panel
+    const settingsPanel = document.createElement('div');
+    settingsPanel.id = 'settings-panel';
+    settingsPanel.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 8px;
+        color: white;
+        font-family: Arial, sans-serif;
+        z-index: 1000;
+    `;
+    
+    // Create mouse inversion toggle
+    const invertOption = document.createElement('div');
+    invertOption.style.cssText = `
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    `;
+    
+    const invertLabel = document.createElement('label');
+    invertLabel.htmlFor = 'invert-mouse';
+    invertLabel.textContent = 'Invert Mouse: ';
+    invertLabel.style.marginRight = '5px';
+    
+    const invertCheckbox = document.createElement('input');
+    invertCheckbox.type = 'checkbox';
+    invertCheckbox.id = 'invert-mouse';
+    invertCheckbox.checked = gameState.settings.invertMouse;
+    
+    // Update setting when checkbox is changed
+    invertCheckbox.addEventListener('change', (e) => {
+        gameState.settings.invertMouse = e.target.checked;
+    });
+    
+    invertOption.appendChild(invertLabel);
+    invertOption.appendChild(invertCheckbox);
+    
+    // Add elements to settings panel
+    settingsPanel.appendChild(invertOption);
+    
+    // Add panel to document
+    document.body.appendChild(settingsPanel);
+}
+
 // Setup keyboard input
 export function setupControls() {
     // Track key presses
@@ -17,6 +67,9 @@ export function setupControls() {
     window.addEventListener('keyup', (event) => {
         gameState.keysPressed[event.key.toLowerCase()] = false;
     });
+    
+    // Create settings UI
+    createSettingsUI();
     
     // Add mouse pointer lock for first-person view
     const canvas = document.getElementById('gameCanvas');

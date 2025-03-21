@@ -191,19 +191,21 @@ export function updatePlayerPosition() {
         isMoving = true;
     }
     if (gameState.keysPressed['a'] || gameState.keysPressed['arrowleft']) {
-        newPosition.x += right.x * PLAYER_SPEED;
-        newPosition.y += right.z * PLAYER_SPEED;
+        newPosition.x -= right.x * PLAYER_SPEED;
+        newPosition.y -= right.z * PLAYER_SPEED;
         isMoving = true;
     }
     if (gameState.keysPressed['d'] || gameState.keysPressed['arrowright']) {
-        newPosition.x -= right.x * PLAYER_SPEED;
-        newPosition.y -= right.z * PLAYER_SPEED;
+        newPosition.x += right.x * PLAYER_SPEED;
+        newPosition.y += right.z * PLAYER_SPEED;
         isMoving = true;
     }
     
     // Mouse look rotation (handled by controls.js)
     if (gameState.mouseDeltaX) {
-        gameState.playerRotation -= gameState.mouseDeltaX * 0.002; // Sensitivity factor
+        // Apply mouse movement based on inversion setting
+        const mouseFactor = gameState.settings.invertMouse ? -0.002 : 0.002;
+        gameState.playerRotation += gameState.mouseDeltaX * mouseFactor;
         gameState.mouseDeltaX = 0;
     }
     
