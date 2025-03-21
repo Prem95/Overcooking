@@ -97,15 +97,50 @@ function createChefModel() {
 
 // Create player character
 export function createPlayer(scene) {
-    // Create the 3D chef model
-    const player = createChefModel();
+    // In first-person view, we don't need to see the player model
+    // We'll create a minimal representation for collision purposes
+    const player = new THREE.Group();
+    
+    // Add a small invisible mesh for collision detection
+    const collisionGeometry = new THREE.CylinderGeometry(PLAYER_SIZE/2, PLAYER_SIZE/2, 1.8, 8);
+    const collisionMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xFF0000, 
+        transparent: true,
+        opacity: 0.0 // Invisible
+    });
+    const collisionMesh = new THREE.Mesh(collisionGeometry, collisionMaterial);
+    collisionMesh.position.y = 0.9; // Position at center of player height
+    player.add(collisionMesh);
+    
+    // Create hands that will be visible in first-person view
+    const handGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.3);
+    const handMaterial = new THREE.MeshPhongMaterial({ color: 0xFFC1A0 }); // Skin tone
+    
+    // Right hand (visible on the right side of the screen)
+    const rightHand = new THREE.Mesh(handGeometry, handMaterial);
+    rightHand.position.set(0.3, -0.3, -0.5); // Position at lower right of view
+    player.add(rightHand);
+    
+    // Left hand (visible on the left side of the screen)
+    const leftHand = new THREE.Mesh(handGeometry, handMaterial);
+    leftHand.position.set(-0.3, -0.3, -0.5); // Position at lower left of view
+    player.add(leftHand);
+    
+    // Store references to hands for animation
+    player.userData = {
+        hands: {
+            left: leftHand,
+            right: rightHand
+        }
+    };
     
     // Start player in the center of the kitchen
     gameState.playerPosition = { x: 0, y: 1.5 };
+    gameState.playerRotation = 0; // Facing positive X initially
     
-    // Position player for 3D isometric view
-    // Adjust the z position to place player on top of the floor
-    player.position.set(gameState.playerPosition.x, gameState.playerPosition.y, 0.4);
+    // Position player for first-person view
+    // Height is fixed at eye level (1.7 meters)
+    player.position.set(gameState.playerPosition.x, 0, gameState.playerPosition.y);
     
     // Add player to scene
     scene.add(player);
@@ -122,7 +157,19 @@ export function createPlayer(scene) {
 
 // Update player position based on inputs
 export function updatePlayerPosition() {
-    if (!gameState.player) return;
+    if (!gameState.player || !gameState.camera) return;
+    
+    const forward = new THREE.Vector3(
+        Math.cos(gameState.playerRotation),
+        0,
+        Math.sin(gameState.playerRotation)
+    );
+    
+    const right = new THREE.Vector3(
+        Math.cos(gameState.playerRotation + Math.PI/2),
+        0,
+        Math.sin(gameState.playerRotation + Math.PI/2)
+    );
     
     const newPosition = { 
         x: gameState.playerPosition.x, 
@@ -134,88 +181,119 @@ export function updatePlayerPosition() {
     
     // Calculate new position based on key presses
     if (gameState.keysPressed['w'] || gameState.keysPressed['arrowup']) {
-        newPosition.y += PLAYER_SPEED;
+        newPosition.x += forward.x * PLAYER_SPEED;
+        newPosition.y += forward.z * PLAYER_SPEED;
         isMoving = true;
-        // Face forward (north) in isometric view
-        gameState.player.rotation.y = 0; 
     }
     if (gameState.keysPressed['s'] || gameState.keysPressed['arrowdown']) {
-        newPosition.y -= PLAYER_SPEED;
+        newPosition.x -= forward.x * PLAYER_SPEED;
+        newPosition.y -= forward.z * PLAYER_SPEED;
         isMoving = true;
-        // Face backward (south) in isometric view
-        gameState.player.rotation.y = Math.PI;
     }
     if (gameState.keysPressed['a'] || gameState.keysPressed['arrowleft']) {
-        newPosition.x -= PLAYER_SPEED;
+        newPosition.x += right.x * PLAYER_SPEED;
+        newPosition.y += right.z * PLAYER_SPEED;
         isMoving = true;
-        // Face left (west) in isometric view
-        gameState.player.rotation.y = Math.PI / 2;
     }
     if (gameState.keysPressed['d'] || gameState.keysPressed['arrowright']) {
-        newPosition.x += PLAYER_SPEED;
+        newPosition.x -= right.x * PLAYER_SPEED;
+        newPosition.y -= right.z * PLAYER_SPEED;
         isMoving = true;
-        // Face right (east) in isometric view
-        gameState.player.rotation.y = -Math.PI / 2;
+    }
+    
+    // Mouse look rotation (handled by controls.js)
+    if (gameState.mouseDeltaX) {
+        gameState.playerRotation -= gameState.mouseDeltaX * 0.002; // Sensitivity factor
+        gameState.mouseDeltaX = 0;
     }
     
     // Update player animation state
     gameState.playerAnimation.walking = isMoving;
     
-    // Handle walking animation
-    updateWalkingAnimation();
+    // Animate hands when walking
+    updateHandsAnimation(isMoving);
     
     // Only update position if there's no collision
-    if (!checkCollision(newPosition)) {
+    // For first-person, we treat x,z as horizontal coordinates and y as height
+    const checkPos = { x: newPosition.x, y: newPosition.y };
+    if (!checkCollision(checkPos)) {
         gameState.playerPosition = newPosition;
-        // Keep the z position at 0.4 to stand on top of the floor
-        gameState.player.position.set(newPosition.x, newPosition.y, 0.4);
+        
+        // Update player position
+        gameState.player.position.set(newPosition.x, 0, newPosition.y);
+        
+        // Update camera position and rotation
+        gameState.camera.position.set(newPosition.x, 1.7, newPosition.y); // Eye height
+        
+        // Update camera direction based on player rotation
+        const lookAtPos = new THREE.Vector3(
+            newPosition.x + Math.cos(gameState.playerRotation),
+            1.7, // Same height as camera
+            newPosition.y + Math.sin(gameState.playerRotation)
+        );
+        gameState.camera.lookAt(lookAtPos);
+        
+        // Update hands rotation to match camera
+        gameState.player.rotation.y = gameState.playerRotation;
         
         // Update error message position if it exists
         if (gameState.errorMessage) {
-            gameState.errorMessage.position.set(
-                newPosition.x,
-                newPosition.y + 0.8,
-                0.5 // Slightly higher z position to be visible
+            // Position error message in front of the camera
+            const errorPos = new THREE.Vector3(
+                newPosition.x + Math.cos(gameState.playerRotation) * 1.0,
+                1.9, // Slightly above eye level
+                newPosition.y + Math.sin(gameState.playerRotation) * 1.0
             );
+            gameState.errorMessage.position.copy(errorPos);
+            
+            // Make error message face the camera
+            gameState.errorMessage.lookAt(gameState.camera.position);
         }
         
         // Update held item position if player is holding something
         if (gameState.playerHolding) {
-            gameState.playerHolding.position.x = newPosition.x;
-            gameState.playerHolding.position.y = newPosition.y + 0.4;
-            gameState.playerHolding.position.z = 0.5; // Position in front of player
+            // Position item in front of the camera (slightly to the right)
+            const itemPos = new THREE.Vector3(
+                newPosition.x + Math.cos(gameState.playerRotation) * 0.5 + Math.cos(gameState.playerRotation + Math.PI/2) * 0.2,
+                1.5, // Slightly below eye level
+                newPosition.y + Math.sin(gameState.playerRotation) * 0.5 + Math.sin(gameState.playerRotation + Math.PI/2) * 0.2
+            );
+            gameState.playerHolding.position.copy(itemPos);
+            
+            // Make held item face the same direction as player
+            gameState.playerHolding.rotation.y = gameState.playerRotation;
         }
     }
 }
 
-// Update walking animation
-function updateWalkingAnimation() {
-    if (!gameState.player) return;
+// Update hands animation
+function updateHandsAnimation(isMoving) {
+    if (!gameState.player || !gameState.player.userData.hands) return;
     
-    if (gameState.playerAnimation.walking) {
-        // Move arms back and forth when walking
+    const { left, right } = gameState.player.userData.hands;
+    
+    if (isMoving) {
+        // Swing arms when walking
         gameState.playerAnimation.armSwingPhase += 0.15;
         
         const phase = Math.sin(gameState.playerAnimation.armSwingPhase);
-        const leftArm = gameState.player.children.find(child => 
-            child.position.x < -0.2 && child.position.y > 0);
-        const rightArm = gameState.player.children.find(child => 
-            child.position.x > 0.2 && child.position.y > 0);
         
-        if (leftArm && rightArm) {
-            leftArm.rotation.x = phase * 0.5;
-            rightArm.rotation.x = -phase * 0.5;
+        if (left && right) {
+            // Move hands back and forth
+            left.position.z = -0.5 - phase * 0.1;
+            right.position.z = -0.5 + phase * 0.1;
+            
+            // Also move hands up and down slightly
+            left.position.y = -0.3 + Math.abs(phase) * 0.05;
+            right.position.y = -0.3 + Math.abs(phase) * 0.05;
         }
-        
-        // Also slightly move legs
-        const leftLeg = gameState.player.children.find(child => 
-            child.position.x < 0 && child.position.y < -0.1);
-        const rightLeg = gameState.player.children.find(child => 
-            child.position.x > 0 && child.position.y < -0.1);
-        
-        if (leftLeg && rightLeg) {
-            leftLeg.position.z = Math.sin(gameState.playerAnimation.armSwingPhase) * 0.05;
-            rightLeg.position.z = -Math.sin(gameState.playerAnimation.armSwingPhase) * 0.05;
+    } else {
+        // Reset hands to default position when not moving
+        if (left && right) {
+            left.position.z = -0.5;
+            right.position.z = -0.5;
+            left.position.y = -0.3;
+            right.position.y = -0.3;
         }
     }
 } 

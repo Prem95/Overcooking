@@ -25,21 +25,22 @@ function init() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB); // Light blue sky background
 
-    // Orthographic camera for isometric, top-down view with a slight tilt
+    // First-person perspective camera
+    const fov = 75; // Field of view
     const aspectRatio = window.innerWidth / window.innerHeight;
-    const viewSize = 12; // The height of the viewable area in units
-    const camera = new THREE.OrthographicCamera(
-        -viewSize * aspectRatio / 2, // left
-        viewSize * aspectRatio / 2,  // right
-        viewSize / 2,                // top
-        -viewSize / 2,               // bottom
-        0.1,                         // near
-        1000                         // far
+    const camera = new THREE.PerspectiveCamera(
+        fov,
+        aspectRatio,
+        0.1,
+        1000
     );
-    
-    // Position camera for a slightly isometric perspective to show depth
-    camera.position.set(5, 10, 5);
-    camera.lookAt(0, 0, 0);
+
+    // Camera will be positioned and updated by the player movement logic
+    camera.position.set(0, 0.9, 0); // Initial camera height at eye level
+    camera.lookAt(new THREE.Vector3(1, 0.9, 0)); // Looking forward initially
+
+    // Add the camera to the player state for reference
+    gameState.camera = camera;
 
     // Renderer setup targeting the canvas with improved settings
     const renderer = new THREE.WebGLRenderer({
@@ -88,10 +89,7 @@ function init() {
     window.addEventListener('resize', () => {
         const aspectRatio = window.innerWidth / window.innerHeight;
         
-        camera.left = -viewSize * aspectRatio / 2;
-        camera.right = viewSize * aspectRatio / 2;
-        camera.top = viewSize / 2;
-        camera.bottom = -viewSize / 2;
+        camera.aspect = aspectRatio;
         camera.updateProjectionMatrix();
         
         renderer.setSize(window.innerWidth, window.innerHeight);

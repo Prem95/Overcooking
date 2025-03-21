@@ -12,16 +12,16 @@ export function createErrorMessage(scene, message) {
     // Create a canvas texture for the error message
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = 256;
-    canvas.height = 64;
+    canvas.width = 512; // Increased size for better readability in first-person
+    canvas.height = 128;
     
     // Fill with semi-transparent background
     context.fillStyle = 'rgba(0, 0, 0, 0.7)';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Add text
+    // Add text with larger font
     context.fillStyle = 'white';
-    context.font = '20px Arial';
+    context.font = '36px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(message, canvas.width/2, canvas.height/2);
@@ -30,15 +30,35 @@ export function createErrorMessage(scene, message) {
     const geometry = new THREE.PlaneGeometry(2, 0.5);
     const material = new THREE.MeshBasicMaterial({ 
         map: texture,
-        transparent: true
+        transparent: true,
+        depthTest: false // Always visible
     });
     
     const errorMesh = new THREE.Mesh(geometry, material);
-    errorMesh.position.set(
-        gameState.playerPosition.x, 
-        gameState.playerPosition.y + 0.8, 
-        0.2
-    );
+    
+    // Position the error message in front of the camera
+    if (gameState.camera) {
+        const direction = new THREE.Vector3();
+        gameState.camera.getWorldDirection(direction);
+        
+        const errorPos = new THREE.Vector3(
+            gameState.playerPosition.x + direction.x * 2,
+            1.8, // Slightly above eye level
+            gameState.playerPosition.y + direction.z * 2
+        );
+        
+        errorMesh.position.copy(errorPos);
+        
+        // Make error message face the camera
+        errorMesh.lookAt(gameState.camera.position);
+    } else {
+        // Fallback positioning if camera is not available
+        errorMesh.position.set(
+            gameState.playerPosition.x, 
+            gameState.playerPosition.y + 0.8, 
+            0.2
+        );
+    }
     
     scene.add(errorMesh);
     gameState.errorMessage = errorMesh;
@@ -87,15 +107,33 @@ export function createProgressBar(scene, x, y) {
                 
                 gl_FragColor = vec4(color, 1.0);
             }
-        `
+        `,
+        depthTest: false // Always visible in first-person view
     });
     
     // Create the progress bar mesh
     const barGeometry = new THREE.PlaneGeometry(1.5, 0.3);
     const progressBar = new THREE.Mesh(barGeometry, progressMaterial);
     
-    // Position above the player
-    progressBar.position.set(x, y + 1.2, 0.2);
+    // Position in front of the player for first-person view
+    if (gameState.camera) {
+        const direction = new THREE.Vector3();
+        gameState.camera.getWorldDirection(direction);
+        
+        const barPos = new THREE.Vector3(
+            x + direction.x * 1.5,
+            1.9, // Above eye level
+            y + direction.z * 1.5
+        );
+        
+        progressBar.position.copy(barPos);
+        
+        // Make progress bar face the camera
+        progressBar.lookAt(gameState.camera.position);
+    } else {
+        // Fallback positioning
+        progressBar.position.set(x, y + 1.2, 0.2);
+    }
     
     // Add to scene
     scene.add(progressBar);

@@ -17,6 +17,67 @@ export function setupControls() {
     window.addEventListener('keyup', (event) => {
         gameState.keysPressed[event.key.toLowerCase()] = false;
     });
+    
+    // Add mouse pointer lock for first-person view
+    const canvas = document.getElementById('gameCanvas');
+    
+    // Request pointer lock when canvas is clicked
+    canvas.addEventListener('click', () => {
+        canvas.requestPointerLock = canvas.requestPointerLock || 
+                                   canvas.mozRequestPointerLock ||
+                                   canvas.webkitRequestPointerLock;
+        canvas.requestPointerLock();
+    });
+    
+    // Handle mouse movement for looking around
+    document.addEventListener('mousemove', (event) => {
+        if (document.pointerLockElement === canvas || 
+            document.mozPointerLockElement === canvas ||
+            document.webkitPointerLockElement === canvas) {
+            
+            // Get the mouse movement delta
+            const movementX = event.movementX || 
+                             event.mozMovementX || 
+                             event.webkitMovementX || 0;
+                             
+            // Store the movement for processing in the player update
+            gameState.mouseDeltaX = movementX;
+        }
+    });
+    
+    // Display instructions for pointer lock
+    const instructions = document.createElement('div');
+    instructions.id = 'instructions';
+    instructions.innerHTML = 'Click on the game to look around with the mouse<br>Use WASD/Arrow keys to move';
+    instructions.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: #fff;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        font-family: Arial, sans-serif;
+        z-index: 100;
+    `;
+    document.body.appendChild(instructions);
+    
+    // Hide instructions when pointer is locked
+    function pointerLockChange() {
+        if (document.pointerLockElement === canvas || 
+            document.mozPointerLockElement === canvas ||
+            document.webkitPointerLockElement === canvas) {
+            instructions.style.display = 'none';
+        } else {
+            instructions.style.display = 'block';
+        }
+    }
+    
+    // Hook pointer lock state change events
+    document.addEventListener('pointerlockchange', pointerLockChange, false);
+    document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+    document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
 }
 
 // Setup mobile controls
