@@ -65,9 +65,9 @@
         setTimeout(() => {
             if (!window.gameLoaded) {
                 document.getElementById('loadingFallback').style.display = 'block';
-                console.log('Game not loaded after 3 seconds. Check console for errors.');
+                console.log('Game not loaded after 5 seconds. Check console for errors.');
             }
-        }, 3000);
+        }, 5000);
 
         // Debug output
         console.log('Page loaded. Waiting for game to initialize...');
@@ -76,6 +76,6 @@
         });
     </script>
     
-    <script type="module" src="main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html> 

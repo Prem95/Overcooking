@@ -51,7 +51,7 @@ export function handleChoppingInteraction(scene) {
         return;
     }
     
-    // Get the counter space in front of the chopping station (now at -4, 0)
+    // Get the counter space in front of the chopping station (now at -6, 0)
     const choppingCounter = kitchen.counters.find(counter => 
         counter.position.x === -4 && 
         counter.position.y === 0
@@ -119,9 +119,9 @@ export function handleCookingInteraction(scene) {
         return;
     }
     
-    // Get the counter space in front of the cooking station (now at -4, -4)
+    // Get the counter space in front of the cooking station (now at 6, -4)
     const cookingCounter = kitchen.counters.find(counter => 
-        counter.position.x === -4 && 
+        counter.position.x === 4 && 
         counter.position.y === -4
     );
     
@@ -188,19 +188,19 @@ export function handleInteraction() {
     const scene = gameState.player?.parent;
     if (!scene) return;
     
-    // Check proximity to pantry
+    // Check proximity to pantry (now at 6, 4)
     if (checkProximity(gameState.playerPosition, kitchen.stations.pantry.position)) {
         handlePantryInteraction(scene);
         return;
     }
     
-    // Check proximity to chopping station
+    // Check proximity to chopping station (now at -6, 0)
     if (checkProximity(gameState.playerPosition, kitchen.stations.chopping.position)) {
         handleChoppingInteraction(scene);
         return;
     }
     
-    // Check proximity to cooking station
+    // Check proximity to cooking station (now at 6, -4)
     if (checkProximity(gameState.playerPosition, kitchen.stations.cooking.position)) {
         handleCookingInteraction(scene);
         return;

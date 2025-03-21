@@ -6,18 +6,18 @@ export const PLAYER_SPEED = 0.1;
 export const INTERACTION_RADIUS = 0.8;
 export const ITEM_SIZE = 0.4;
 
-// Color definitions
+// Color definitions with enhanced vibrant colors
 export const COLORS = {
-    pantry: 0x8BC34A,        // green
-    chopping: 0xFF5252,      // red
-    cooking: 0xFF9800,       // orange
-    plateDispenser: 0x9E9E9E, // grey
-    serving: 0x2196F3,       // blue
-    counter: 0xBDBDBD,       // light grey
+    pantry: 0x228B22,        // forest green for pantry
+    chopping: 0xFF5252,      // bright red for chopping
+    cooking: 0xFF9800,       // orange for cooking
+    plateDispenser: 0xC0C0C0, // silver for plate dispenser
+    serving: 0x2196F3,       // blue for serving
+    counter: 0xFFD700,       // bright yellow for counters (from design.md)
     player: 0xFFFFFF,        // white
     onion: 0xFFEB3B,         // yellow
     tomato: 0xFF5252,        // red
-    meat: 0x795548           // brown
+    meat: 0x8B4513           // saddle brown for meat
 };
 
 // Item types

@@ -84,6 +84,14 @@ function createChefModel() {
     shadow.position.y = -0.38;
     character.add(shadow);
     
+    // Make character receive shadows
+    character.traverse(function(object) {
+        if (object.isMesh) {
+            object.castShadow = true;
+            object.receiveShadow = true;
+        }
+    });
+    
     return character;
 }
 
@@ -94,7 +102,10 @@ export function createPlayer(scene) {
     
     // Start player in the center of the kitchen
     gameState.playerPosition = { x: 0, y: 1.5 };
-    player.position.set(gameState.playerPosition.x, gameState.playerPosition.y, 0.1);
+    
+    // Position player for 3D isometric view
+    // Adjust the z position to place player on top of the floor
+    player.position.set(gameState.playerPosition.x, gameState.playerPosition.y, 0.4);
     
     // Add player to scene
     scene.add(player);
@@ -110,7 +121,9 @@ export function createPlayer(scene) {
 }
 
 // Update player position based on inputs
-export function updatePlayerPosition(scene) {
+export function updatePlayerPosition() {
+    if (!gameState.player) return;
+    
     const newPosition = { 
         x: gameState.playerPosition.x, 
         y: gameState.playerPosition.y 
@@ -123,20 +136,26 @@ export function updatePlayerPosition(scene) {
     if (gameState.keysPressed['w'] || gameState.keysPressed['arrowup']) {
         newPosition.y += PLAYER_SPEED;
         isMoving = true;
+        // Face forward (north) in isometric view
+        gameState.player.rotation.y = 0; 
     }
     if (gameState.keysPressed['s'] || gameState.keysPressed['arrowdown']) {
         newPosition.y -= PLAYER_SPEED;
         isMoving = true;
+        // Face backward (south) in isometric view
+        gameState.player.rotation.y = Math.PI;
     }
     if (gameState.keysPressed['a'] || gameState.keysPressed['arrowleft']) {
         newPosition.x -= PLAYER_SPEED;
         isMoving = true;
-        gameState.player.rotation.y = Math.PI / 2; // Turn left
+        // Face left (west) in isometric view
+        gameState.player.rotation.y = Math.PI / 2;
     }
     if (gameState.keysPressed['d'] || gameState.keysPressed['arrowright']) {
         newPosition.x += PLAYER_SPEED;
         isMoving = true;
-        gameState.player.rotation.y = -Math.PI / 2; // Turn right
+        // Face right (east) in isometric view
+        gameState.player.rotation.y = -Math.PI / 2;
     }
     
     // Update player animation state
@@ -148,14 +167,15 @@ export function updatePlayerPosition(scene) {
     // Only update position if there's no collision
     if (!checkCollision(newPosition)) {
         gameState.playerPosition = newPosition;
-        gameState.player.position.set(newPosition.x, newPosition.y, 0.1);
+        // Keep the z position at 0.4 to stand on top of the floor
+        gameState.player.position.set(newPosition.x, newPosition.y, 0.4);
         
         // Update error message position if it exists
         if (gameState.errorMessage) {
             gameState.errorMessage.position.set(
                 newPosition.x,
                 newPosition.y + 0.8,
-                0.2
+                0.5 // Slightly higher z position to be visible
             );
         }
         
@@ -163,6 +183,7 @@ export function updatePlayerPosition(scene) {
         if (gameState.playerHolding) {
             gameState.playerHolding.position.x = newPosition.x;
             gameState.playerHolding.position.y = newPosition.y + 0.4;
+            gameState.playerHolding.position.z = 0.5; // Position in front of player
         }
     }
 }
@@ -195,28 +216,6 @@ function updateWalkingAnimation() {
         if (leftLeg && rightLeg) {
             leftLeg.position.z = Math.sin(gameState.playerAnimation.armSwingPhase) * 0.05;
             rightLeg.position.z = -Math.sin(gameState.playerAnimation.armSwingPhase) * 0.05;
-        }
-    } else {
-        // Reset arm positions when not walking
-        const leftArm = gameState.player.children.find(child => 
-            child.position.x < -0.2 && child.position.y > 0);
-        const rightArm = gameState.player.children.find(child => 
-            child.position.x > 0.2 && child.position.y > 0);
-            
-        if (leftArm && rightArm) {
-            leftArm.rotation.x = 0;
-            rightArm.rotation.x = 0;
-        }
-        
-        // Reset leg positions
-        const leftLeg = gameState.player.children.find(child => 
-            child.position.x < 0 && child.position.y < -0.1);
-        const rightLeg = gameState.player.children.find(child => 
-            child.position.x > 0 && child.position.y < -0.1);
-            
-        if (leftLeg && rightLeg) {
-            leftLeg.position.z = 0;
-            rightLeg.position.z = 0;
         }
     }
 } 

@@ -21,30 +21,62 @@ function init() {
     canvas.id = 'gameCanvas';
     container.appendChild(canvas);
     
-    // Scene setup
+    // Scene setup with improved background
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    scene.background = new THREE.Color(0x87CEEB); // Light blue sky background
 
-    // Orthographic camera for 2D top-down view
+    // Orthographic camera for isometric, top-down view with a slight tilt
     const aspectRatio = window.innerWidth / window.innerHeight;
-    const viewSize = 10; // The height of the viewable area in units
+    const viewSize = 12; // The height of the viewable area in units
     const camera = new THREE.OrthographicCamera(
         -viewSize * aspectRatio / 2, // left
         viewSize * aspectRatio / 2,  // right
         viewSize / 2,                // top
         -viewSize / 2,               // bottom
-        1,                           // near
+        0.1,                         // near
         1000                         // far
     );
-    camera.position.z = 10;
+    
+    // Position camera for a slightly isometric perspective to show depth
+    camera.position.set(5, 10, 5);
+    camera.lookAt(0, 0, 0);
 
-    // Renderer setup targeting the canvas
+    // Renderer setup targeting the canvas with improved settings
     const renderer = new THREE.WebGLRenderer({
         canvas: canvas,
         antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Enable shadow rendering
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Add enhanced lighting for 3D models
+    // Warm ambient light for a cozy atmosphere
+    const ambientLight = new THREE.AmbientLight(0xfff5e1, 0.5);
+    scene.add(ambientLight);
+    
+    // Main directional light with shadows to enhance depth
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(5, 10, 5);
+    directionalLight.castShadow = true;
+    
+    // Improve shadow quality
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.bias = -0.0005;
+    
+    const d = 15;
+    directionalLight.shadow.camera.left = -d;
+    directionalLight.shadow.camera.right = d;
+    directionalLight.shadow.camera.top = d;
+    directionalLight.shadow.camera.bottom = -d;
+    
+    scene.add(directionalLight);
 
     // Initialize game components
     createKitchenLayout(scene);
